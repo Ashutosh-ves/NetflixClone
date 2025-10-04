@@ -9,10 +9,10 @@ import os
 
 def install_requirements():
     """Install required packages"""
-    print("Installing required packages...")
+    print("Installing/upgrading required packages...")
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-        print("✅ Requirements installed successfully!")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "-r", "requirements.txt"])
+        print("✅ Requirements installed/upgraded successfully!")
     except subprocess.CalledProcessError as e:
         print(f"❌ Error installing requirements: {e}")
         return False
