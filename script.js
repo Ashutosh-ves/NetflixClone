@@ -1,25 +1,22 @@
 // Mock movie database
 const movies = [
-    { id: 1, title: "Echoes in the Dark", icon: "🌙", genre: "thriller", year: 2024 },
-    { id: 2, title: "Forest of Memories", icon: "🌲", genre: "drama", year: 2023 },
-    { id: 3, title: "The Witness", icon: "👁️", genre: "mystery", year: 2024 },
-    { id: 4, title: "Beneath the Surface", icon: "🌊", genre: "thriller", year: 2023 },
-    { id: 5, title: "Shadow Play", icon: "🎭", genre: "drama", year: 2024 },
-    { id: 6, title: "The Investigation", icon: "🔍", genre: "mystery", year: 2024 },
-    { id: 7, title: "Static Dreams", icon: "⚡", genre: "scifi", year: 2023 },
-    { id: 8, title: "Lost in the Mist", icon: "🌫️", genre: "horror", year: 2024 },
-    { id: 9, title: "The Threshold", icon: "🚪", genre: "thriller", year: 2023 },
-    { id: 10, title: "Night Vision", icon: "🌃", genre: "action", year: 2024 },
-    { id: 11, title: "The Corporate Maze", icon: "💼", genre: "drama", year: 2024 },
-    { id: 12, title: "Beyond the Void", icon: "🌌", genre: "scifi", year: 2023 },
-    { id: 13, title: "Castle Chronicles", icon: "🏰", genre: "action", year: 2024 },
-    { id: 14, title: "Time Travelers", icon: "⏰", genre: "scifi", year: 2023 },
-    { id: 15, title: "Into the Unknown", icon: "🔦", genre: "mystery", year: 2024 },
-    { id: 16, title: "The Midnight Horizon", icon: "🌅", genre: "thriller", year: 2024 },
-    { id: 17, title: "Dark Secrets", icon: "🕵️", genre: "mystery", year: 2023 },
-    { id: 18, title: "Neon Nights", icon: "🌆", genre: "action", year: 2024 },
-    { id: 19, title: "The Last Stand", icon: "⚔️", genre: "action", year: 2024 },
-    { id: 20, title: "Whispers in the Wind", icon: "🍃", genre: "drama", year: 2023 }
+    { id: 1, title: "Echoes in the Dark", img: "https://m.media-amazon.com/images/M/MV5BYTUxZGIzZjItMTEzNC00YTNlLWEwZTItMzFhNzE4Zjk0YzEwXkEyXkFqcGc@._V1_QL75_UX190_CR0,4,190,281_.jpg", genre: "thriller", year: 2024 },
+    { id: 2, title: "Forest of Memories", img: "https://m.media-amazon.com/images/I/71BsiS-OLxL._UF1000,1000_QL80_.jpg", genre: "drama", year: 2023 },
+    { id: 3, title: "A Minecraft Movie", img: "https://upload.wikimedia.org/wikipedia/en/6/66/A_Minecraft_Movie_poster.jpg", genre: "action", year: 2025 },
+    { id: 4, title: "Beneath the Surface", img: "https://m.media-amazon.com/images/M/MV5BYjZjYmQ1MGMtZjI4ZS00OWVkLWE0MzMtM2I5MTM3YmFkZGRiXkEyXkFqcGc@._V1_.jpg", genre: "thriller", year: 2023 },
+    { id: 5, title: "Chainsaw Man – The Movie: Reze Arc", img: "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSlacjk-N2t0Ool13mp3eZJAHGCfN-ce_J6qt6BsL08mYbzeJetpHS2kTjRzy8kZMVHdP_OnA", genre: "action", year: 2024 },
+    
+    { id: 6, title: "The Shawshank Redemption", img: "https://m.media-amazon.com/images/M/MV5BMDAyY2FhYjctNDc5OS00MDNlLThiMGUtY2UxYWVkNGY2ZjljXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg", genre: "drama", year: 1994 },
+    { id: 7, title: "The Godfather", img: "https://m.media-amazon.com/images/M/MV5BNGEwYjgwOGQtYjg5ZS00Njc1LTk2ZGEtM2QwZWQ2NjdhZTE5XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg", genre: "drama", year: 1972 },
+    { id: 8, title: "Dune", img: "https://upload.wikimedia.org/wikipedia/en/thumb/8/8e/Dune_%282021_film%29.jpg/250px-Dune_%282021_film%29.jpg", genre: "scifi", year: 2021 },
+    { id: 9, title: "The Matrix", img: "https://upload.wikimedia.org/wikipedia/en/thumb/d/db/The_Matrix.png/250px-The_Matrix.png", genre: "scifi", year: 1999 },
+    { id: 10, title: "Alita: Battle Angel", img: "https://m.media-amazon.com/images/M/MV5BYmZhZGQzM2MtMWEyZC00YTU1LTk4YTQtMTg3ZjEzM2U1NTkxXkEyXkFqcGc@._V1_.jpg", genre: "scifi", year: 2019 },
+
+    { id: 11, title: "Jurassic World Rebirth", img: "https://m.media-amazon.com/images/M/MV5BMGM3ZmI3NzQtNzU5Yi00ZWI1LTg3YTAtNmNmNWIyMWFjZTBkXkEyXkFqcGc@._V1_.jpg", genre: "action", year: 2025 },
+    { id: 12, title: "F1", img: "https://images.fandango.com/ImageRenderer/0/0/redesign/static/img/default_poster--dark-mode.png/0/images/masterrepository/Fandango/236966/F1MOVIE_VERT_Sunset_2764x4096_DOM.jpg", genre: "drama", year: 2025 },
+    { id: 13, title: "Superman", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxGnS5AO1k3OpZnSm3tRpSE6QMwI6nD1wZAcbPrTsNa9FZQcBttmU_WNWdTX2IpZu2Dmca9g", genre: "action", year: 2025 },
+    { id: 14, title: "Final Destination Bloodlines", img: "https://upload.wikimedia.org/wikipedia/en/thumb/a/ab/Final_Destination_Bloodlines_%282025%29_poster.jpg/250px-Final_Destination_Bloodlines_%282025%29_poster.jpg", genre: "horror", year: 2025 },
+    { id: 15, title: "28 Years Later", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSE81vHnn-JyOKeU5eyAkaqEmY5zzv5MjZNetgS8dFFCIqwjLPYgbnhGJ_bjoUf97WP_URR", genre: "horror", year: 2025 }
 ];
 
 // Recommended movies (hardcoded selection)
@@ -64,7 +61,7 @@ function createMovieCard(movie) {
     const card = document.createElement('div');
     card.className = 'content-card';
     card.innerHTML = `
-        <div class="placeholder-img">${movie.icon}</div>
+        <img src="${movie.img}" alt="${movie.title}" />
         <div class="content-title">${movie.title}</div>
     `;
     return card;
