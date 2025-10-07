@@ -1,8 +1,10 @@
+
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 import joblib
+from sklearn.preprocessing import StandardScaler
 
 # Load preprocessed data from Day 1
 processed_df = pd.read_csv('movies_preprocessed.csv', low_memory=False)
@@ -18,13 +20,13 @@ tfidf = TfidfVectorizer(max_features=200, stop_words='english')
 text_features = tfidf.fit_transform(text_data).toarray()
 
 # Extract preprocessed numeric/categorical features (excluding text and identifiers)
-non_text_features = processed_df.drop(columns=['id', 'original_title', 'overview'])
+non_text_features_raw = processed_df.drop(columns=['id', 'original_title', 'overview'])
 
 # Ensure all features are numeric and handle missing values
-non_text_features = non_text_features.select_dtypes(include=[np.number])
-non_text_features = non_text_features.fillna(0)  # Fill NaN with 0
+non_text_features = non_text_features_raw.select_dtypes(include=[np.number])
+non_text_features = non_text_features_raw.fillna(0)  # Fill NaN with 0
 
-# Combine all features
+# Combine all features (non_text_features is already a numpy array)
 X = np.hstack([text_features, non_text_features.values])
 
 # Train KNN model

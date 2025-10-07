@@ -12,17 +12,13 @@ CORS(app)  # Enable CORS for frontend communication
 def load_models():
     """Load models with better error handling"""
     try:
-        print("Loading improved KNN model...")
-        knn_model = joblib.load('improved_knn_model.joblib')
-        print(" Improved KNN model loaded")
+        print("Loading KNN model...")
+        knn_model = joblib.load('knn_model.joblib')
+        print("✅ KNN model loaded")
         
-        print("Loading improved TF-IDF vectorizer...")
-        tfidf_vectorizer = joblib.load('improved_tfidf_vectorizer.joblib')
-        print(" Improved TF-IDF vectorizer loaded")
-        
-        print("Loading improved scaler...")
-        scaler = joblib.load('improved_scaler.joblib')
-        print(" Improved scaler loaded")
+        print("Loading TF-IDF vectorizer...")
+        tfidf_vectorizer = joblib.load('tfidf_vectorizer.joblib')
+        print("✅ TF-IDF vectorizer loaded")
         
         print("Loading movie data...")
         movies_df = pd.read_csv('movies_preprocessed.csv', low_memory=False)
@@ -33,122 +29,48 @@ def load_models():
         # Merge poster paths
         movies_df = movies_df.merge(original_df[['id', 'poster_path', 'release_date']], on='id', how='left', suffixes=('', '_orig'))
         
-        print(f" Loaded {len(movies_df)} movies with poster data")
+        print(f"✅ Loaded {len(movies_df)} movies with poster data")
         
         # Preprocess the data (same as in model.py)
         movies_df['adult'] = movies_df['adult'].map({'True': 1, 'False': 0, True: 1, False: 0})
         text_data = movies_df['overview'].fillna('') + ' ' + movies_df['original_title'].fillna('')
-        
-        # Improved TF-IDF with same parameters as training
         text_features = tfidf_vectorizer.transform(text_data).toarray()
         
-        # Extract genre features
-        genre_columns = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 
-                        'Drama', 'Family', 'Fantasy', 'Horror', 'Music', 'Mystery', 
-                        'Romance', 'Science Fiction', 'Thriller', 'War', 'Western']
-        available_genres = [col for col in genre_columns if col in movies_df.columns]
-        genre_features = movies_df[available_genres].fillna(0).values
+        non_text_features = movies_df.drop(columns=['id', 'original_title', 'overview'])
+        non_text_features = non_text_features.select_dtypes(include=[np.number])
+        non_text_features = non_text_features.fillna(0)
         
-        # Extract language features
-        language_columns = [col for col in movies_df.columns if col in ['en', 'fr', 'es', 'de', 'it', 'ja', 'ko', 'zh']]
-        language_features = movies_df[language_columns].fillna(0).values if language_columns else np.zeros((len(movies_df), 1))
+        X = np.hstack([text_features, non_text_features.values])
         
-        # Extract and scale numerical features
-        numerical_features = movies_df[['budget_norm', 'adult']].fillna(0).values
-        numerical_features_scaled = scaler.transform(numerical_features)
-        
-        # Apply same weights as in training
-        text_weight = 1.0
-        genre_weight = 3.0
-        language_weight = 0.5
-        numerical_weight = 0.5
-        
-        weighted_text = text_features * text_weight
-        weighted_genres = genre_features * genre_weight
-        weighted_languages = language_features * language_weight
-        weighted_numerical = numerical_features_scaled * numerical_weight
-        
-        # Combine all features
-        X = np.hstack([
-            weighted_text,
-            weighted_genres, 
-            weighted_languages,
-            weighted_numerical
-        ])
-        
-        print(" Improved models and data loaded successfully!")
-        return knn_model, tfidf_vectorizer, movies_df, X, scaler
+        print("✅ Models and data loaded successfully!")
+        return knn_model, tfidf_vectorizer, movies_df, X
         
     except Exception as e:
-        print(f" Error loading models: {e}")
-        print(" Try running: python improved_model.py")
-        return None, None, None, None, None
-
-# Helper function to get movie genres
-def get_movie_genres(row):
-    """Extract genres for a movie row"""
-    genre_columns = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 
-                    'Drama', 'Family', 'Fantasy', 'Horror', 'Music', 'Mystery', 
-                    'Romance', 'Science Fiction', 'Thriller', 'War', 'Western']
-    
-    if movies_df is not None:
-        available_genres = [col for col in genre_columns if col in movies_df.columns]
-        return [genre for genre in available_genres if row[genre] == 1]
-    return []
+        print(f"❌ Error loading models: {e}")
+        print("💡 Try running: python retrain_models.py")
+        return None, None, None, None
 
 # Helper function to get poster URL with fallbacks
-def get_poster_url(row, title, genres=None):
-    """Get poster URL with multiple fallback options and genre-based colors"""
+def get_poster_url(row, title):
+    """Get poster URL with multiple fallback options"""
     # First try TMDB poster path
-    if pd.notna(row.get('poster_path')) and str(row.get('poster_path')).strip():
-        poster_path = str(row['poster_path']).strip()
-        if not poster_path.startswith('/'):
-            poster_path = '/' + poster_path
-        return f"https://image.tmdb.org/t/p/w500{poster_path}"
+
+    """
+    The TMDB (The Movie Database) API provides endpoints to retrieve
+    detailed information about movies, TV shows, and more.
+    """
+
+    if pd.notna(row.get('poster_path')):
+        return f"https://image.tmdb.org/t/p/w500{row['poster_path']}"
     
-    # Genre-based color schemes
-    genre_colors = {
-        'Action': ('8B0000', 'FFD700'),      # Dark red, gold
-        'Adventure': ('228B22', 'FFFFFF'),    # Forest green, white
-        'Animation': ('FF69B4', 'FFFFFF'),    # Hot pink, white
-        'Comedy': ('FF8C00', 'FFFFFF'),       # Dark orange, white
-        'Crime': ('2F4F4F', 'FF0000'),        # Dark slate gray, red
-        'Drama': ('4B0082', 'FFFFFF'),        # Indigo, white
-        'Family': ('32CD32', 'FFFFFF'),       # Lime green, white
-        'Fantasy': ('9370DB', 'FFD700'),      # Medium purple, gold
-        'Horror': ('000000', 'FF0000'),       # Black, red
-        'Romance': ('DC143C', 'FFFFFF'),      # Crimson, white
-        'Science Fiction': ('4169E1', 'FFFFFF'), # Royal blue, white
-        'Thriller': ('8B0000', 'FFFFFF'),     # Dark red, white
-        'War': ('556B2F', 'FFFFFF'),          # Dark olive green, white
-        'Western': ('D2691E', 'FFFFFF'),      # Chocolate, white
-    }
-    
-    # Default colors
-    bg_color, text_color = '1a1a2e', 'ffffff'
-    
-    # Find genre-based colors
-    if genres:
-        for genre in genres:
-            if genre in genre_colors:
-                bg_color, text_color = genre_colors[genre]
-                break
-    
-    # Fallback: Generate poster from title
+    # Fallback: Generate poster from title using a different service
     if title and title != "Unknown Title":
-        # Clean title for URL - remove special characters and limit length
-        import re
-        clean_title = re.sub(r'[^\w\s-]', '', str(title))
-        clean_title = re.sub(r'\s+', '+', clean_title.strip())
-        clean_title = clean_title[:25]  # Limit length
-        
-        if clean_title:
-            return f"https://via.placeholder.com/300x450/{bg_color}/{text_color}?text={clean_title}"
-        else:
-            return f"https://via.placeholder.com/300x450/{bg_color}/{text_color}?text=Movie"
+        # Use a more reliable placeholder service with movie title
+        clean_title = title.replace(' ', '+').replace(':', '').replace('&', 'and')
+        return f"https://via.placeholder.com/300x450/1a1a2e/ffffff?text={clean_title[:20]}"
     
     # Final fallback
-    return f"https://via.placeholder.com/300x450/{bg_color}/{text_color}?text=No+Poster"
+    return "https://via.placeholder.com/300x450/1a1a2e/ffffff?text=No+Poster"
 
 def filter_movies_with_posters(movies_df, limit=50):
     """Filter movies that have poster paths for better user experience"""
@@ -162,7 +84,7 @@ def filter_movies_with_posters(movies_df, limit=50):
         return movies_df.head(limit)
 
 # Load models
-knn_model, tfidf_vectorizer, movies_df, X, scaler = load_models()
+knn_model, tfidf_vectorizer, movies_df, X = load_models()
 
 @app.route('/')
 def home():
@@ -209,21 +131,14 @@ def get_movies():
                 year = 2000
         
         # Get poster URL with fallback
-        movie_genres = get_movie_genres(row)
-        poster_url = get_poster_url(row, str(title), movie_genres)
+        poster_url = get_poster_url(row, str(title))
         
-        # Safely convert ID to integer
-        try:
-            movie_id_val = int(float(str(row.get('id', idx))))
-        except (ValueError, TypeError):
-            movie_id_val = idx
-            
         movies_list.append({
-            "id": movie_id_val,
+            "id": int(row.get('id', idx)),
             "title": str(title),
             "overview": str(overview),
             "year": year,
-            "genre": movie_genres[0] if movie_genres else "drama",  # Use actual primary genre
+            "genre": "drama",  # Default genre since we don't have genre data
             "img": poster_url
         })
     
@@ -270,93 +185,18 @@ def search_movies():
                 year = 2000
         
         # Get poster URL with fallback
-        movie_genres = get_movie_genres(row)
-        poster_url = get_poster_url(row, str(title), movie_genres)
+        poster_url = get_poster_url(row, str(title))
         
-        # Safely convert ID to integer
-        try:
-            movie_id_val = int(float(str(row.get('id', idx))))
-        except (ValueError, TypeError):
-            movie_id_val = idx
-            
         movies_list.append({
-            "id": movie_id_val,
+            "id": int(row.get('id', idx)),
             "title": str(title),
             "overview": str(overview),
             "year": year,
-            "genre": movie_genres[0] if movie_genres else "drama",
+            "genre": "drama",
             "img": poster_url
         })
     
     return jsonify({"movies": movies_list})
-
-@app.route('/api/movie/<int:movie_id>', methods=['GET'])
-def get_movie_details(movie_id):
-    """Get details for a specific movie"""
-    if movies_df is None:
-        return jsonify({"error": "Movies data not loaded"}), 500
-    
-    try:
-        # Find movie by ID
-        movie_row = None
-        for idx, row in movies_df.iterrows():
-            try:
-                row_id = int(float(str(row.get('id', idx))))
-                if row_id == movie_id:
-                    movie_row = row
-                    break
-            except (ValueError, TypeError):
-                continue
-        
-        if movie_row is None:
-            return jsonify({"error": f"Movie with ID {movie_id} not found"}), 404
-        
-        # Handle NaN values properly
-        overview = movie_row['overview'] if pd.notna(movie_row['overview']) else "No overview available"
-        title = movie_row['original_title'] if pd.notna(movie_row['original_title']) else "Unknown Title"
-        
-        # Extract year from release_date
-        year = 2000  # default
-        if pd.notna(movie_row.get('release_date')):
-            try:
-                year_str = str(movie_row['release_date'])[:4]
-                year = int(year_str) if year_str.isdigit() else 2000
-            except:
-                year = 2000
-        
-        # Get genres for this movie
-        genre_columns = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 
-                        'Drama', 'Family', 'Fantasy', 'Horror', 'Music', 'Mystery', 
-                        'Romance', 'Science Fiction', 'Thriller', 'War', 'Western']
-        available_genres = [col for col in genre_columns if col in movies_df.columns]
-        movie_genres = [genre for genre in available_genres if movie_row[genre] == 1]
-        
-        # Get poster URL with fallback
-        movie_genres = get_movie_genres(movie_row)
-        poster_url = get_poster_url(movie_row, str(title), movie_genres)
-        
-        # Safely convert ID to integer
-        try:
-            movie_id_val = int(float(str(movie_row.get('id', movie_id))))
-        except (ValueError, TypeError):
-            movie_id_val = movie_id
-        
-        movie_details = {
-            "id": movie_id_val,
-            "title": str(title),
-            "overview": str(overview),
-            "year": year,
-            "genres": movie_genres,
-            "img": poster_url,
-            "budget": float(movie_row.get('budget_norm', 0)) if pd.notna(movie_row.get('budget_norm')) else 0,
-            "adult": bool(movie_row.get('adult', False))
-        }
-        
-        return jsonify({"movie": movie_details})
-        
-    except Exception as e:
-        print(f"Movie details error: {e}")
-        return jsonify({"error": f"Failed to get movie details: {str(e)}"}), 500
 
 @app.route('/api/recommend/<int:movie_id>', methods=['GET'])
 def recommend_movies(movie_id):
@@ -369,27 +209,19 @@ def recommend_movies(movie_id):
         movie_idx = None
         movie_row = None
         for idx, row in movies_df.iterrows():
-            try:
-                row_id = int(float(str(row.get('id', idx))))
-                if row_id == movie_id:
-                    movie_idx = idx
-                    movie_row = row
-                    break
-            except (ValueError, TypeError):
-                # If ID conversion fails, skip this row
-                continue
+            if int(row.get('id', idx)) == movie_id:
+                movie_idx = idx
+                movie_row = row
+                break
         
         if movie_idx is None:
             return jsonify({"error": f"Movie with ID {movie_id} not found"}), 404
         
         print(f"Finding recommendations for: {movie_row['original_title']}")
         
-        # Get recommendations using improved model
+        # Get recommendations
         distances, indices = knn_model.kneighbors([X[movie_idx]])
         recommended_indices = indices[0][1:]  # Exclude the movie itself
-        
-        # Convert cosine distances to similarity scores (cosine distance = 1 - cosine similarity)
-        similarities = 1 - distances[0][1:]
         
         recommendations = []
         for i, idx in enumerate(recommended_indices):
@@ -412,25 +244,20 @@ def recommend_movies(movie_id):
                 except:
                     year = 2000
             
-            # Use improved similarity score from cosine similarity
-            similarity_score = float(similarities[i])
+            # Calculate similarity score (convert distance to similarity percentage)
+            distance = distances[0][i + 1]  # +1 because we excluded the original movie
+            # Use exponential decay for better similarity scores
+            similarity_score = float(np.exp(-distance / 10))  # Scale distance for better range
             
             # Get poster URL with fallback
-            movie_genres = get_movie_genres(row)
-            poster_url = get_poster_url(row, str(title), movie_genres)
-            
-            # Safely convert ID to integer
-            try:
-                movie_id_val = int(float(str(row.get('id', idx))))
-            except (ValueError, TypeError):
-                movie_id_val = idx
+            poster_url = get_poster_url(row, str(title))
             
             recommendations.append({
-                "id": movie_id_val,
+                "id": int(row.get('id', idx)),
                 "title": str(title),
                 "overview": str(overview),
                 "year": year,
-                "genre": movie_genres[0] if movie_genres else "drama",
+                "genre": "drama",
                 "similarity_score": similarity_score,
                 "img": poster_url
             })
@@ -490,21 +317,14 @@ def get_popular_movies():
                     year = 2000
             
             # Get poster URL with fallback
-            movie_genres = get_movie_genres(row)
-            poster_url = get_poster_url(row, str(title), movie_genres)
+            poster_url = get_poster_url(row, str(title))
             
-            # Safely convert ID to integer
-            try:
-                movie_id_val = int(float(str(row.get('id', idx))))
-            except (ValueError, TypeError):
-                movie_id_val = idx
-                
             movies_list.append({
-                "id": movie_id_val,
+                "id": int(row.get('id', idx)),
                 "title": str(title),
                 "overview": str(overview),
                 "year": year,
-                "genre": movie_genres[0] if movie_genres else "drama",
+                "genre": "drama",
                 "img": poster_url
             })
         

@@ -8,21 +8,21 @@ import os
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
-# Load the trained models and data
+# Load the improved models with 10 recommendations
 def load_models():
-    """Load models with better error handling"""
+    """Load improved models with 10 recommendations"""
     try:
-        print("Loading improved KNN model...")
-        knn_model = joblib.load('improved_knn_model.joblib')
-        print(" Improved KNN model loaded")
+        print("Loading improved KNN model (10 recommendations)...")
+        knn_model = joblib.load('improved_knn_model_10.joblib')
+        print("✅ Improved KNN model with 10 recommendations loaded")
         
         print("Loading improved TF-IDF vectorizer...")
-        tfidf_vectorizer = joblib.load('improved_tfidf_vectorizer.joblib')
-        print(" Improved TF-IDF vectorizer loaded")
+        tfidf_vectorizer = joblib.load('improved_tfidf_vectorizer_10.joblib')
+        print("✅ Improved TF-IDF vectorizer loaded")
         
         print("Loading improved scaler...")
-        scaler = joblib.load('improved_scaler.joblib')
-        print(" Improved scaler loaded")
+        scaler = joblib.load('improved_scaler_10.joblib')
+        print("✅ Improved scaler loaded")
         
         print("Loading movie data...")
         movies_df = pd.read_csv('movies_preprocessed.csv', low_memory=False)
@@ -33,9 +33,9 @@ def load_models():
         # Merge poster paths
         movies_df = movies_df.merge(original_df[['id', 'poster_path', 'release_date']], on='id', how='left', suffixes=('', '_orig'))
         
-        print(f" Loaded {len(movies_df)} movies with poster data")
+        print(f"✅ Loaded {len(movies_df)} movies with poster data")
         
-        # Preprocess the data (same as in model.py)
+        # Preprocess the data (same as in improved_model.py)
         movies_df['adult'] = movies_df['adult'].map({'True': 1, 'False': 0, True: 1, False: 0})
         text_data = movies_df['overview'].fillna('') + ' ' + movies_df['original_title'].fillna('')
         
@@ -76,79 +76,29 @@ def load_models():
             weighted_numerical
         ])
         
-        print(" Improved models and data loaded successfully!")
+        print("✅ Improved models with 10 recommendations loaded successfully!")
         return knn_model, tfidf_vectorizer, movies_df, X, scaler
         
     except Exception as e:
-        print(f" Error loading models: {e}")
-        print(" Try running: python improved_model.py")
+        print(f"❌ Error loading improved models: {e}")
+        print("💡 Try running: python retrain_improved_model_10.py")
         return None, None, None, None, None
 
-# Helper function to get movie genres
-def get_movie_genres(row):
-    """Extract genres for a movie row"""
-    genre_columns = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 
-                    'Drama', 'Family', 'Fantasy', 'Horror', 'Music', 'Mystery', 
-                    'Romance', 'Science Fiction', 'Thriller', 'War', 'Western']
-    
-    if movies_df is not None:
-        available_genres = [col for col in genre_columns if col in movies_df.columns]
-        return [genre for genre in available_genres if row[genre] == 1]
-    return []
-
 # Helper function to get poster URL with fallbacks
-def get_poster_url(row, title, genres=None):
-    """Get poster URL with multiple fallback options and genre-based colors"""
+def get_poster_url(row, title):
+    """Get poster URL with multiple fallback options"""
     # First try TMDB poster path
-    if pd.notna(row.get('poster_path')) and str(row.get('poster_path')).strip():
-        poster_path = str(row['poster_path']).strip()
-        if not poster_path.startswith('/'):
-            poster_path = '/' + poster_path
-        return f"https://image.tmdb.org/t/p/w500{poster_path}"
+    if pd.notna(row.get('poster_path')):
+        return f"https://image.tmdb.org/t/p/w500{row['poster_path']}"
     
-    # Genre-based color schemes
-    genre_colors = {
-        'Action': ('8B0000', 'FFD700'),      # Dark red, gold
-        'Adventure': ('228B22', 'FFFFFF'),    # Forest green, white
-        'Animation': ('FF69B4', 'FFFFFF'),    # Hot pink, white
-        'Comedy': ('FF8C00', 'FFFFFF'),       # Dark orange, white
-        'Crime': ('2F4F4F', 'FF0000'),        # Dark slate gray, red
-        'Drama': ('4B0082', 'FFFFFF'),        # Indigo, white
-        'Family': ('32CD32', 'FFFFFF'),       # Lime green, white
-        'Fantasy': ('9370DB', 'FFD700'),      # Medium purple, gold
-        'Horror': ('000000', 'FF0000'),       # Black, red
-        'Romance': ('DC143C', 'FFFFFF'),      # Crimson, white
-        'Science Fiction': ('4169E1', 'FFFFFF'), # Royal blue, white
-        'Thriller': ('8B0000', 'FFFFFF'),     # Dark red, white
-        'War': ('556B2F', 'FFFFFF'),          # Dark olive green, white
-        'Western': ('D2691E', 'FFFFFF'),      # Chocolate, white
-    }
-    
-    # Default colors
-    bg_color, text_color = '1a1a2e', 'ffffff'
-    
-    # Find genre-based colors
-    if genres:
-        for genre in genres:
-            if genre in genre_colors:
-                bg_color, text_color = genre_colors[genre]
-                break
-    
-    # Fallback: Generate poster from title
+    # Fallback: Generate poster from title using a different service
     if title and title != "Unknown Title":
-        # Clean title for URL - remove special characters and limit length
-        import re
-        clean_title = re.sub(r'[^\w\s-]', '', str(title))
-        clean_title = re.sub(r'\s+', '+', clean_title.strip())
-        clean_title = clean_title[:25]  # Limit length
-        
-        if clean_title:
-            return f"https://via.placeholder.com/300x450/{bg_color}/{text_color}?text={clean_title}"
-        else:
-            return f"https://via.placeholder.com/300x450/{bg_color}/{text_color}?text=Movie"
+        # Use a more reliable placeholder service with movie title
+        clean_title = title.replace(' ', '+').replace(':', '').replace('&', 'and')
+        return f"https://via.placeholder.com/300x450/1a1a2e/ffffff?text={clean_title[:20]}"
     
     # Final fallback
-    return f"https://via.placeholder.com/300x450/{bg_color}/{text_color}?text=No+Poster"
+    return "https://via.placeholder.com/300x450/1a1a2e/ffffff?text=No+Poster"
 
 def filter_movies_with_posters(movies_df, limit=50):
     """Filter movies that have poster paths for better user experience"""
@@ -170,22 +120,13 @@ def home():
 
 @app.route('/api')
 def api_info():
-    return jsonify({"message": "Movie Recommendation API is running!"})
+    return jsonify({"message": "Improved Movie Recommendation API with 10 recommendations is running!"})
 
 @app.route('/api/movies', methods=['GET'])
 def get_movies():
     """Get all movies with basic info"""
     if movies_df is None:
-        # Return mock data if models aren't loaded
-        return jsonify({
-            "movies": [
-                {"id": 1, "title": "The Shawshank Redemption", "overview": "Two imprisoned men bond over a number of years...", "year": 1994, "genre": "drama", "img": "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"},
-                {"id": 2, "title": "The Godfather", "overview": "The aging patriarch of an organized crime dynasty...", "year": 1972, "genre": "drama", "img": "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg"},
-                {"id": 3, "title": "The Dark Knight", "overview": "When the menace known as the Joker wreaks havoc...", "year": 2008, "genre": "action", "img": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg"},
-                {"id": 4, "title": "Pulp Fiction", "overview": "The lives of two mob hitmen, a boxer, a gangster...", "year": 1994, "genre": "drama", "img": "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg"},
-                {"id": 5, "title": "Forrest Gump", "overview": "The presidencies of Kennedy and Johnson...", "year": 1994, "genre": "drama", "img": "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg"}
-            ]
-        })
+        return jsonify({"movies": []})
     
     # Return movies with posters prioritized
     filtered_movies = filter_movies_with_posters(movies_df, 50)
@@ -209,8 +150,7 @@ def get_movies():
                 year = 2000
         
         # Get poster URL with fallback
-        movie_genres = get_movie_genres(row)
-        poster_url = get_poster_url(row, str(title), movie_genres)
+        poster_url = get_poster_url(row, str(title))
         
         # Safely convert ID to integer
         try:
@@ -223,7 +163,7 @@ def get_movies():
             "title": str(title),
             "overview": str(overview),
             "year": year,
-            "genre": movie_genres[0] if movie_genres else "drama",  # Use actual primary genre
+            "genre": "drama",  # Default genre since we don't have genre data
             "img": poster_url
         })
     
@@ -235,14 +175,7 @@ def search_movies():
     query = request.args.get('q', '').lower()
     
     if movies_df is None:
-        # Return mock search results
-        mock_movies = [
-            {"id": 1, "title": "The Shawshank Redemption", "overview": "Two imprisoned men bond over a number of years...", "year": 1994, "genre": "drama", "img": "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"},
-            {"id": 2, "title": "The Godfather", "overview": "The aging patriarch of an organized crime dynasty...", "year": 1972, "genre": "drama", "img": "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg"},
-            {"id": 3, "title": "The Dark Knight", "overview": "When the menace known as the Joker wreaks havoc...", "year": 2008, "genre": "action", "img": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg"}
-        ]
-        filtered = [m for m in mock_movies if query in m['title'].lower()]
-        return jsonify({"movies": filtered})
+        return jsonify({"movies": []})
     
     if not query:
         return jsonify({"movies": []})
@@ -270,8 +203,7 @@ def search_movies():
                 year = 2000
         
         # Get poster URL with fallback
-        movie_genres = get_movie_genres(row)
-        poster_url = get_poster_url(row, str(title), movie_genres)
+        poster_url = get_poster_url(row, str(title))
         
         # Safely convert ID to integer
         try:
@@ -284,7 +216,7 @@ def search_movies():
             "title": str(title),
             "overview": str(overview),
             "year": year,
-            "genre": movie_genres[0] if movie_genres else "drama",
+            "genre": "drama",
             "img": poster_url
         })
     
@@ -332,8 +264,7 @@ def get_movie_details(movie_id):
         movie_genres = [genre for genre in available_genres if movie_row[genre] == 1]
         
         # Get poster URL with fallback
-        movie_genres = get_movie_genres(movie_row)
-        poster_url = get_poster_url(movie_row, str(title), movie_genres)
+        poster_url = get_poster_url(movie_row, str(title))
         
         # Safely convert ID to integer
         try:
@@ -360,7 +291,7 @@ def get_movie_details(movie_id):
 
 @app.route('/api/recommend/<int:movie_id>', methods=['GET'])
 def recommend_movies(movie_id):
-    """Get recommendations for a specific movie"""
+    """Get 10 improved recommendations for a specific movie"""
     if knn_model is None or movies_df is None or X is None:
         return jsonify({"error": "Models not loaded"}), 500
     
@@ -382,11 +313,11 @@ def recommend_movies(movie_id):
         if movie_idx is None:
             return jsonify({"error": f"Movie with ID {movie_id} not found"}), 404
         
-        print(f"Finding recommendations for: {movie_row['original_title']}")
+        print(f"Finding 10 recommendations for: {movie_row['original_title']}")
         
-        # Get recommendations using improved model
+        # Get 10 recommendations using improved model
         distances, indices = knn_model.kneighbors([X[movie_idx]])
-        recommended_indices = indices[0][1:]  # Exclude the movie itself
+        recommended_indices = indices[0][1:]  # Exclude the movie itself (now 10 recommendations)
         
         # Convert cosine distances to similarity scores (cosine distance = 1 - cosine similarity)
         similarities = 1 - distances[0][1:]
@@ -416,8 +347,7 @@ def recommend_movies(movie_id):
             similarity_score = float(similarities[i])
             
             # Get poster URL with fallback
-            movie_genres = get_movie_genres(row)
-            poster_url = get_poster_url(row, str(title), movie_genres)
+            poster_url = get_poster_url(row, str(title))
             
             # Safely convert ID to integer
             try:
@@ -430,12 +360,14 @@ def recommend_movies(movie_id):
                 "title": str(title),
                 "overview": str(overview),
                 "year": year,
-                "genre": movie_genres[0] if movie_genres else "drama",
+                "genre": "drama",
                 "similarity_score": similarity_score,
                 "img": poster_url
             })
         
         selected_movie_title = str(movie_row['original_title']) if pd.notna(movie_row['original_title']) else "Unknown Title"
+        
+        print(f"✅ Found 10 recommendations for {selected_movie_title}")
         
         return jsonify({
             "movie": {
@@ -490,8 +422,7 @@ def get_popular_movies():
                     year = 2000
             
             # Get poster URL with fallback
-            movie_genres = get_movie_genres(row)
-            poster_url = get_poster_url(row, str(title), movie_genres)
+            poster_url = get_poster_url(row, str(title))
             
             # Safely convert ID to integer
             try:
@@ -504,7 +435,7 @@ def get_popular_movies():
                 "title": str(title),
                 "overview": str(overview),
                 "year": year,
-                "genre": movie_genres[0] if movie_genres else "drama",
+                "genre": "drama",
                 "img": poster_url
             })
         
@@ -518,15 +449,7 @@ def get_popular_movies():
 def recommend_random():
     """Get recommendations for a random movie"""
     if movies_df is None or knn_model is None:
-        # Return mock recommendations
-        return jsonify({
-            "movie": {"id": 1, "title": "The Shawshank Redemption"},
-            "recommendations": [
-                {"id": 2, "title": "The Godfather", "overview": "The aging patriarch of an organized crime dynasty...", "year": 1972, "genre": "drama", "similarity_score": 0.85, "img": "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg"},
-                {"id": 4, "title": "Pulp Fiction", "overview": "The lives of two mob hitmen, a boxer, a gangster...", "year": 1994, "genre": "drama", "similarity_score": 0.78, "img": "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg"},
-                {"id": 5, "title": "Forrest Gump", "overview": "The presidencies of Kennedy and Johnson...", "year": 1994, "genre": "drama", "similarity_score": 0.72, "img": "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg"}
-            ]
-        })
+        return jsonify({"error": "Models not loaded"}), 500
     
     try:
         # Pick a random popular movie (from first 1000 to get better known movies)
@@ -540,4 +463,15 @@ def recommend_random():
         return jsonify({"error": f"Random recommendation failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("\n" + "="*60)
+    print("🚀 IMPROVED MOVIE RECOMMENDATION SYSTEM WITH 10 RECOMMENDATIONS")
+    print("="*60)
+    print("This version provides 10 high-quality recommendations using:")
+    print("  • Cosine similarity for better accuracy")
+    print("  • Weighted features (genres prioritized)")
+    print("  • Advanced TF-IDF with bigrams")
+    print("  • Proper feature scaling")
+    print("Run on port 5002 to test alongside other versions")
+    print("="*60 + "\n")
+    
+    app.run(debug=True, host='0.0.0.0', port=5002)  # Different port

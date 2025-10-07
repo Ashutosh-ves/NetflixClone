@@ -155,7 +155,7 @@ function displayMovieRecommendations(movieTitle, recommendations) {
             </div>
             <div class="recommendations-grid">
                 ${recommendations.map(movie => `
-                    <div class="recommendation-card">
+                    <div class="recommendation-card" onclick="showMovieDetails(${movie.id})" style="cursor: pointer;">
                         <img src="${movie.img || DEFAULT_POSTER}" alt="${movie.title}" onerror="this.src='${DEFAULT_POSTER}'" />
                         <div class="recommendation-info">
                             <h3>${movie.title}</h3>
@@ -176,6 +176,75 @@ function displayMovieRecommendations(movieTitle, recommendations) {
 // Close recommendations modal
 function closeRecommendationsModal() {
     const modal = document.querySelector('.recommendations-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Show detailed information about a specific movie
+async function showMovieDetails(movieId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/movie/${movieId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const movie = data.movie;
+
+        if (movie) {
+            displayMovieDetails(movie);
+        } else {
+            alert('Movie details not found.');
+        }
+    } catch (error) {
+        console.error('Error getting movie details:', error);
+        alert('Unable to load movie details. Please try again.');
+    }
+}
+
+// Display detailed movie information in a modal
+function displayMovieDetails(movie) {
+    // Close any existing modals first
+    closeRecommendationsModal();
+    closeMovieDetailsModal();
+
+    const modal = document.createElement('div');
+    modal.className = 'movie-details-modal';
+    modal.innerHTML = `
+        <div class="modal-content movie-details-content">
+            <div class="modal-header">
+                <h2>${movie.title} (${movie.year})</h2>
+                <button class="close-btn" onclick="closeMovieDetailsModal()">&times;</button>
+            </div>
+            <div class="movie-details-body">
+                <div class="movie-poster">
+                    <img src="${movie.img || DEFAULT_POSTER}" alt="${movie.title}" onerror="this.src='${DEFAULT_POSTER}'" />
+                </div>
+                <div class="movie-info">
+                    <div class="movie-genres">
+                        <strong>Genres:</strong> ${movie.genres && movie.genres.length > 0 ? movie.genres.join(', ') : 'Not specified'}
+                    </div>
+                    <div class="movie-overview">
+                        <strong>Overview:</strong>
+                        <p>${movie.overview}</p>
+                    </div>
+                    <div class="movie-actions">
+                        <button class="action-btn" onclick="showMovieRecommendations(${movie.id}, '${movie.title.replace(/'/g, "\\'")}')">
+                            Get Recommendations
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+}
+
+// Close movie details modal
+function closeMovieDetailsModal() {
+    const modal = document.querySelector('.movie-details-modal');
     if (modal) {
         modal.remove();
     }
